@@ -14,9 +14,25 @@ app.use(express.json({ limit: '1mb' }));
 app.use(express.urlencoded({ extended: true }));
 app.use(express.static(path.join(__dirname, '..'), { extensions: ['html'] }));
 
+app.use((req, _res, next) => {
+  console.log(`[${new Date().toISOString()}] ${req.method} ${req.path}`);
+  next();
+});
+
 function esc(s = '') {
   return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
 }
+
+app.get('/', (_req, res) => {
+  res.json({
+    ok: true,
+    service: 'zambia-claim-backend',
+    telegramConfigured: !!(TELEGRAM_BOT_TOKEN && TELEGRAM_CHAT_ID),
+    time: new Date().toISOString()
+  });
+});
+
+app.get('/health', (_req, res) => res.json({ ok: true, ts: Date.now() }));
 
 app.post('/api/submit', async (req, res) => {
   try {
@@ -57,17 +73,6 @@ app.post('/api/submit', async (req, res) => {
     console.error('submit error:', err);
     return res.status(500).json({ ok: false, error: err.message });
   }
-});
-
-app.get('/health', (_req, res) => res.json({ ok: true, ts: Date.now() }));
-
-app.get('/', (_req, res) => {
-  res.json({
-    ok: true,
-    service: 'zambia-claim-backend',
-    telegramConfigured: !!(TELEGRAM_BOT_TOKEN && TELEGRAM_CHAT_ID),
-    time: new Date().toISOString()
-  });
 });
 
 app.listen(PORT, () => {
